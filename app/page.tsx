@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { RecipeCard } from "@/components/recipe-card";
 import { FeaturedRecipes } from "@/components/featured-recipes";
+import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/nextjs";
 
 export default function Home() {
   return (
@@ -26,11 +27,17 @@ export default function Home() {
           >
             Recipes
           </Link>
+          <SignedOut>
+            <SignInButton mode="modal" />
+          </SignedOut>
+          <SignedIn>
+            <UserButton />
+          </SignedIn>
           <Link
             className="text-sm font-medium hover:underline underline-offset-4"
             href="/profile"
           >
-            Profile
+            My Recipes
           </Link>
           <Link
             className="text-sm font-medium hover:underline underline-offset-4"
