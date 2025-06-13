@@ -36,6 +36,7 @@ export default function ProfilePage() {
     recipeCount: 15,
     followers: 243,
     following: 112,
+    userId: user.id,
   };
 
   const userRecipes = [
