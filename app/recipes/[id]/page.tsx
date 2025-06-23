@@ -1,52 +1,63 @@
 "use client";
 
-import { useState } from "react";
+import { notFound, useParams } from "next/navigation";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, Clock, Star, Users, Bookmark, Share2 } from "lucide-react";
+import {
+  ArrowLeft,
+  Clock,
+  Star,
+  Users,
+  Bookmark,
+  Share2
+} from "lucide-react";
 
 import { Button } from "@/components/atoms/visuals/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/molecules/navigation/tabs";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger
+} from "@/components/molecules/navigation/tabs";
 import { Textarea } from "@/components/atoms/form/textarea";
 import { CommentSection } from "@/components/organisms/content/comment-section";
+import { getFullImageUrl } from "@/lib/utils";
+import { API_BASE } from "@/lib/config";
+import { Recipe } from "@/lib/type";
 
-// Mock data for the recipe
-const recipe = {
-  id: "1",
-  title: "Bun Bò Huế",
-  description: "A spicy beef noodle soup with lemongrass and chili oil.",
-  rating: 4.8,
-  author: "ChefAlex",
-  image: "/images/bunbohue.jpg?height=500&width=800",
-  prepTime: "15 mins",
-  cookTime: "20 mins",
-  servings: 4,
-  ingredients: [
-    "200g rice vermicelli noodles",
-    "300g beef shank, thinly sliced",
-    "1 onion, sliced",
-    "2 stalks lemongrass, bruised",
-    "4 cups beef broth",
-    "2 tablespoons fish sauce",
-    "1 tablespoon chili oil",
-    "Fresh herbs (mint, cilantro)",
-    "Lime wedges for serving",
-  ],
-  instructions: [
-    "Soak the rice vermicelli noodles in hot water for 10 minutes, then drain.",
-    "In a pot, combine beef broth, onion, lemongrass, and fish sauce. Bring to a boil.",
-    "Add the sliced beef and cook until tender.",
-    "Serve the soup over the noodles and top with fresh herbs and chili oil.",
-    "Garnish with lime wedges and enjoy!",
-  ],
-};
-
-export default function RecipeDetail({ params }: { params: { id: string } }) {
+export default function RecipeDetail() {
+  const params = useParams();
+  const id = params?.id as string;
+  const [isNotFound, setIsNotFound] = useState(false);
+  const [recipe, setRecipe] = useState<Recipe | null>(null);
   const [userRating, setUserRating] = useState<number | null>(null);
 
-  const handleRating = (rating: number) => {
-    setUserRating(rating);
-  };
+  useEffect(() => {
+    const getRecipeById = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/recipes/${id}`);
+        if (!res.ok) {
+          setIsNotFound(true);
+          return;
+        }
+        const data: Recipe = await res.json();
+        setRecipe(data);
+      } catch (err) {
+        setIsNotFound(true);
+      }
+    };
+
+    if (id) getRecipeById();
+  }, [id]);
+  
+  const handleRating = (rating: number) => setUserRating(rating);
+
+  if (isNotFound) {
+    notFound(); // triggers Next.js built-in 404 page
+  }
+
+  if (!recipe) return null;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -63,7 +74,7 @@ export default function RecipeDetail({ params }: { params: { id: string } }) {
       <div className="grid md:grid-cols-2 gap-8">
         <div className="relative h-[400px] md:h-[500px] rounded-lg overflow-hidden">
           <Image
-            src={recipe.image || "/placeholder.svg"}
+            src={getFullImageUrl(recipe.imageUrl)}
             alt={recipe.title}
             fill
             className="object-cover"
@@ -182,7 +193,7 @@ export default function RecipeDetail({ params }: { params: { id: string } }) {
             />
             <Button>Post Comment</Button>
           </div>
-          <CommentSection recipeId={params.id} />
+          <CommentSection recipeId={id} />
         </TabsContent>
       </Tabs>
     </div>

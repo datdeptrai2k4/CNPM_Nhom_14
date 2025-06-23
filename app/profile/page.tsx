@@ -21,6 +21,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/atoms/visuals/
 import { RecipeCard } from "@/components/organisms/content/recipe-card";
 import { PlusCircle, Settings, Upload } from "lucide-react";
 import { API_BASE } from "@/lib/config";
+import { getFullImageUrl } from "@/lib/utils";
 
 type Recipe = {
   id: string;
@@ -83,18 +84,6 @@ export default function ProfilePage() {
     following: 112,
     userId: user.id,
   };
-
-  const getFullImageUrl = (url: string | undefined) => {
-    if (url === undefined) {
-      url = '';
-    }
-
-    const something = url?.startsWith("http") ? url : `${api_based_url}${url}`
-
-    console.log(something);
-
-    return something;
-  }
 
   // Hàm xử lý submit form
   const handleAddRecipe = async (e: React.FormEvent) => {
