@@ -20,6 +20,7 @@ import { Textarea } from "@/components/atoms/form/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/atoms/visuals/avatar";
 import { RecipeCard } from "@/components/organisms/content/recipe-card";
 import { PlusCircle, Settings, Upload } from "lucide-react";
+import { API_BASE } from "@/lib/config";
 
 type Recipe = {
   id: string;
@@ -36,6 +37,7 @@ type Recipe = {
 };
 
 export default function ProfilePage() {
+  const api_based_url = API_BASE;
   const { user } = useUser();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("my-recipes");
@@ -58,7 +60,7 @@ export default function ProfilePage() {
   useEffect(() => {
     if (!user) return;
     console.log(imagePath);
-    fetch(`http://localhost:8080/api/recipes/user/${user.id}`)
+    fetch(`${api_based_url}/api/recipes/user/${user.id}`)
       .then(res => res.json())
       .then(data => {
         setUserRecipes(data as Recipe[]);
@@ -87,7 +89,7 @@ export default function ProfilePage() {
       url = '';
     }
 
-    const something = url?.startsWith("http") ? url : `http://localhost:8080${url}`
+    const something = url?.startsWith("http") ? url : `${api_based_url}${url}`
 
     console.log(something);
 
@@ -109,7 +111,7 @@ export default function ProfilePage() {
       categoryId: Number(categoryId),
     };
 
-    const res = await fetch("http://localhost:8080/api/recipes/", {
+    const res = await fetch(`${api_based_url}/api/recipes/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(newRecipe),
@@ -148,7 +150,7 @@ export default function ProfilePage() {
     formData.append("file", file);
 
     try {
-      const res = await fetch("http://localhost:8080/api/recipes/upload-image", {
+      const res = await fetch(`${api_based_url}/api/recipes/upload-image`, {
         method: "POST",
         body: formData,
       });
