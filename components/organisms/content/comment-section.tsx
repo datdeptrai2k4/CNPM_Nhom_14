@@ -1,5 +1,5 @@
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/atoms/visuals/avatar"
+import { Button } from "@/components/atoms/visuals/button"
 import { ThumbsUp, Flag } from "lucide-react"
 
 interface CommentSectionProps {

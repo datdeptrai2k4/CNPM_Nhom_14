@@ -1,15 +1,15 @@
 "use client"
 
 import { useState } from "react"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/molecules/navigation/tabs"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/atoms/layout/card"
+import { Button } from "@/components/atoms/visuals/button"
+import { Input } from "@/components/atoms/form/input"
+import { Label } from "@/components/atoms/form/label"
+import { Textarea } from "@/components/atoms/form/textarea"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/organisms/data/table"
+import { Badge } from "@/components/atoms/visuals/badge"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/atoms/visuals/avatar"
 import {
   Dialog,
   DialogContent,
@@ -18,7 +18,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
+} from "@/components/molecules/overlays/dialog"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,7 +29,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
+} from "@/components/feedback/alert-dialog"
 import { BarChart, Check, Eye, Flag, MoreHorizontal, Plus, Search, Users, Utensils, X } from "lucide-react"
 import {
   DropdownMenu,
@@ -38,7 +38,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/molecules/overlays/dropdown-menu"
 
 // Mock data
 const MOCK_RECIPES = [

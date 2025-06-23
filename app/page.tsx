@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { Search } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { RecipeCard } from "@/components/recipe-card";
-import { FeaturedRecipes } from "@/components/featured-recipes";
+import { Button } from "@/components/atoms/visuals/button";
+import { Input } from "@/components/atoms/form/input";
+import { RecipeCard } from "@/components/organisms/content/recipe-card";
+import { FeaturedRecipes } from "@/components/organisms/content/featured-recipes";
 import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/nextjs";
 
 export default function Home() {

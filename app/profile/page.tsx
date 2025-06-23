@@ -2,8 +2,10 @@
 
 import { useUser } from "@clerk/nextjs";
 import { useState, useEffect } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
+import { Home } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/molecules/navigation/tabs";
+import { Button } from "@/components/atoms/visuals/button";
 import {
   Card,
   CardContent,
@@ -11,12 +13,12 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { RecipeCard } from "@/components/recipe-card";
+} from "@/components/atoms/layout/card";
+import { Input } from "@/components/atoms/form/input";
+import { Label } from "@/components/atoms/form/label";
+import { Textarea } from "@/components/atoms/form/textarea";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/atoms/visuals/avatar";
+import { RecipeCard } from "@/components/organisms/content/recipe-card";
 import { PlusCircle, Settings, Upload } from "lucide-react";
 
 type Recipe = {
@@ -35,6 +37,7 @@ type Recipe = {
 
 export default function ProfilePage() {
   const { user } = useUser();
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState("my-recipes");
 
   // State cho form thêm recipe
@@ -42,8 +45,10 @@ export default function ProfilePage() {
   const [description, setDescription] = useState("");
   const [ingredients, setIngredients] = useState("");
   const [categoryId, setCategoryId] = useState<number>(1); // Giá trị mặc định, có thể fetch categories
-  const [imageUrl, setImageUrl] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imageUrl, setImageUrl] = useState<string>("");     // for preview only
+  const [imagePath, setImagePath] = useState<string>("");   // backend path
 
   // Danh sách recipe của user
   const [userRecipes, setUserRecipes] = useState<Recipe[]>([]);
@@ -53,7 +58,7 @@ export default function ProfilePage() {
   useEffect(() => {
     if (!user) return;
     setLoading(true);
-    fetch(`http://localhost:3000/api/recipes/user/${user.id}`)
+    fetch(`http://localhost:8080/api/recipes/user/${user.id}`)
       .then(res => res.json())
       .then(data => {
         setUserRecipes(data as Recipe[]);
@@ -77,6 +82,16 @@ export default function ProfilePage() {
     userId: user.id,
   };
 
+  const getFullImageUrl = (url: string | undefined) => {
+    if (url === undefined) {
+      url = '';
+    }
+
+    console.log(url);
+
+    return url?.startsWith("http") ? url : `http://localhost:8080${url}`;
+  }
+
   // Hàm xử lý submit form
   const handleAddRecipe = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -92,7 +107,7 @@ export default function ProfilePage() {
       categoryId: Number(categoryId),
     };
 
-    const res = await fetch("http://localhost:3000/api/recipes/", {
+    const res = await fetch("http://localhost:8080/api/recipes/", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(newRecipe),
@@ -116,8 +131,47 @@ export default function ProfilePage() {
     }
   };
 
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Set preview using URL.createObjectURL (for real file preview)
+    setImageUrl(URL.createObjectURL(file));
+
+    // Prepare form data
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const res = await fetch("http://localhost:8080/api/recipes/upload-image", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        alert("Image upload failed");
+        return;
+      }
+
+      const { path } = await res.json();
+      setImagePath(path); // <- this is the backend-hosted /uploads/xyz.jpg
+    } catch (error) {
+      console.error("Upload failed", error);
+      alert("Upload error");
+    }
+  };
+
+
   return (
     <div className="container mx-auto px-4 py-8">
+      <Button
+        variant="ghost"
+        onClick={() => router.push("/")}
+        className="flex items-center gap-2 text-sm text-muted-foreground mb-6 hover:text-black"
+      >
+        <Home className="h-4 w-4" />
+        Back to Home
+      </Button>
       <div className="flex flex-col md:flex-row gap-8 items-start">
         <div className="w-full md:w-1/3">
           <Card>
@@ -174,18 +228,28 @@ export default function ProfilePage() {
               </div>
               {loading ? (
                 <div>Loading recipes...</div>
+              ) : userRecipes.length === 0 ? (
+                <div className="text-center text-muted-foreground mt-10 space-y-2">
+                  <p className="text-xl font-semibold">No recipes yet...</p>
+                  <p className="text-sm italic">
+                    “The secret ingredient is always love.” 💛
+                  </p>
+                  <p className="text-sm italic">
+                    Start by sharing your first dish with the world!
+                  </p>
+                </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {userRecipes.map((recipe) => (
                     <RecipeCard
-                    key={recipe.id}
-                    {...recipe}
-                    description={recipe.description ?? ""}
-                    title={recipe.title ?? ""}
-                    image={recipe.imageUrl ?? "/placeholder.svg"}
-                    rating={typeof recipe.rating === "number" ? recipe.rating : 0}
-                    author={recipe.author ?? userData.username}
-                  />
+                      key={recipe.id}
+                      {...recipe}
+                      description={recipe.description ?? ""}
+                      title={recipe.title ?? ""}
+                      image={getFullImageUrl(recipe.imageUrl)}
+                      rating={typeof recipe.rating === "number" ? recipe.rating : 0}
+                      author={recipe.author ?? userData.username}
+                    />
                   ))}
                 </div>
               )}
@@ -224,11 +288,14 @@ export default function ProfilePage() {
                       <Label htmlFor="ingredients">Ingredients</Label>
                       <Textarea
                         id="ingredients"
-                        placeholder="List ingredients"
+                        placeholder={"e.g. 2 eggs \n1 cup of sugar \n1/2 tsp salt"}
                         value={ingredients}
                         onChange={(e) => setIngredients(e.target.value)}
                         required
                       />
+                      <p className="text-xs text-muted-foreground">
+                        Enter one ingredient per line for clarity.
+                      </p>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="categoryId">Category ID</Label>
@@ -242,14 +309,36 @@ export default function ProfilePage() {
                       {/* Bạn có thể fetch category list về để dropdown, ở đây nhập id trực tiếp */}
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="imageUrl">Image URL</Label>
+                      <Label htmlFor="image">Upload Image</Label>
+                      <div className="flex items-center gap-4">
+                        <label
+                          htmlFor="image"
+                          className="inline-flex cursor-pointer items-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium shadow-sm hover:bg-muted"
+                        >
+                          📁 Choose File
+                        </label>
+                        <span className="text-sm text-muted-foreground">
+                          {imageFile?.name || "No file chosen"}
+                        </span>
+                      </div>
                       <Input
-                        id="imageUrl"
-                        placeholder="Image URL"
-                        value={imageUrl}
-                        onChange={(e) => setImageUrl(e.target.value)}
+                        id="image"
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleImageChange}
+
+                        required
                       />
+                      {imageUrl && (
+                        <img
+                          src={imageUrl}
+                          alt="Preview"
+                          className="mt-2 max-h-40 rounded border"
+                        />
+                      )}
                     </div>
+
                     <div className="space-y-2">
                       <Label htmlFor="videoUrl">Video URL</Label>
                       <Input

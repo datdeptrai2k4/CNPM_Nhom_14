@@ -2,8 +2,8 @@ import Image from "next/image"
 import Link from "next/link"
 import { Star } from "lucide-react"
 
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardFooter, CardHeader } from "@/components/atoms/layout/card"
+import { Button } from "@/components/atoms/visuals/button"
 
 interface RecipeCardProps {
   id: string

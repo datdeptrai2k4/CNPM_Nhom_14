@@ -1,5 +1,7 @@
 import { cn } from "@/lib/utils"
 
+// provide visual feedback about loading content
+
 function Skeleton({
   className,
   ...props

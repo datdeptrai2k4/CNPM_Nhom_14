@@ -5,10 +5,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, Clock, Star, Users, Bookmark, Share2 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
-import { CommentSection } from "@/components/comment-section";
+import { Button } from "@/components/atoms/visuals/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/molecules/navigation/tabs";
+import { Textarea } from "@/components/atoms/form/textarea";
+import { CommentSection } from "@/components/organisms/content/comment-section";
 
 // Mock data for the recipe
 const recipe = {

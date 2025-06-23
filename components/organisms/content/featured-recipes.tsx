@@ -9,8 +9,8 @@ import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
 
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Button } from "@/components/atoms/visuals/button";
+import { Card } from "@/components/atoms/layout/card";
 
 const featuredRecipes = [
   {
