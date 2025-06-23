@@ -47,7 +47,7 @@ export default function ProfilePage() {
   const [categoryId, setCategoryId] = useState<number>(1); // Giá trị mặc định, có thể fetch categories
   const [videoUrl, setVideoUrl] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imageUrl, setImageUrl] = useState<string>("");     // for preview only
+  const [imageUrl, setImageUrl] = useState<string>("");
   const [imagePath, setImagePath] = useState<string>("");   // backend path
 
   // Danh sách recipe của user
@@ -57,7 +57,7 @@ export default function ProfilePage() {
   // Lấy danh sách recipe của user từ API
   useEffect(() => {
     if (!user) return;
-    setLoading(true);
+    console.log(imagePath);
     fetch(`http://localhost:8080/api/recipes/user/${user.id}`)
       .then(res => res.json())
       .then(data => {
@@ -87,9 +87,11 @@ export default function ProfilePage() {
       url = '';
     }
 
-    console.log(url);
+    const something = url?.startsWith("http") ? url : `http://localhost:8080${url}`
 
-    return url?.startsWith("http") ? url : `http://localhost:8080${url}`;
+    console.log(something);
+
+    return something;
   }
 
   // Hàm xử lý submit form
@@ -101,7 +103,7 @@ export default function ProfilePage() {
       title,
       description,
       ingredients,
-      imageUrl,
+      imageUrl: imagePath,
       videoUrl,
       userId: user.id,
       categoryId: Number(categoryId),
@@ -124,7 +126,9 @@ export default function ProfilePage() {
       setDescription("");
       setIngredients("");
       setCategoryId(1);
+      setImagePath("");
       setImageUrl("");
+      setImageFile(null);
       setVideoUrl("");
     } else {
       alert("Thêm recipe thất bại!");
@@ -137,6 +141,7 @@ export default function ProfilePage() {
 
     // Set preview using URL.createObjectURL (for real file preview)
     setImageUrl(URL.createObjectURL(file));
+    setImageFile(file);
 
     // Prepare form data
     const formData = new FormData();
@@ -154,6 +159,7 @@ export default function ProfilePage() {
       }
 
       const { path } = await res.json();
+      console.log(path);
       setImagePath(path); // <- this is the backend-hosted /uploads/xyz.jpg
     } catch (error) {
       console.error("Upload failed", error);
@@ -330,7 +336,7 @@ export default function ProfilePage() {
 
                         required
                       />
-                      {imageUrl && (
+                      {imageFile && (
                         <img
                           src={imageUrl}
                           alt="Preview"
