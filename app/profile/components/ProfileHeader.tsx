@@ -8,15 +8,15 @@ export function ProfileHeader({ userData }: { userData: any }) {
     <Card>
       <CardHeader className="flex flex-col items-center text-center">
         <Avatar className="h-24 w-24">
-          <AvatarImage src={userData.avatar} />
-          <AvatarFallback>{userData.name.charAt(0)}</AvatarFallback>
+          <AvatarImage src={userData.imageUrl} />
+          <AvatarFallback>{userData.fullName}</AvatarFallback>
         </Avatar>
-        <CardTitle className="mt-4">{userData.name}</CardTitle>
+        <CardTitle className="mt-4">{userData.fullName}</CardTitle>
         <CardDescription>@{userData.username}</CardDescription>
       </CardHeader>
       <CardContent className="text-center">
         <div className="flex justify-center gap-6">
-          {["recipeCount", "followers", "following"].map((key) => (
+          {["recipeCount", "savedRecipeCount"].map((key) => (
             <div key={key}>
               <p className="font-bold">{userData[key]}</p>
               <p className="text-sm text-gray-500">{key.replace(/([A-Z])/g, " $1")}</p>
