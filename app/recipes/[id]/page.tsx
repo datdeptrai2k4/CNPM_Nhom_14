@@ -114,12 +114,12 @@ export default function RecipeDetail() {
             <div className="flex flex-col items-center p-3 bg-amber-50 rounded-lg">
               <Clock className="h-5 w-5 text-amber-500 mb-1" />
               <span className="text-sm text-gray-500">Prep Time</span>
-              <span className="font-medium">{recipe.prepTime}</span>
+              <span className="font-medium">{recipe.prepTime} minutes</span>
             </div>
             <div className="flex flex-col items-center p-3 bg-amber-50 rounded-lg">
               <Clock className="h-5 w-5 text-amber-500 mb-1" />
               <span className="text-sm text-gray-500">Cook Time</span>
-              <span className="font-medium">{recipe.cookTime}</span>
+              <span className="font-medium">{recipe.cookTime} minutes</span>
             </div>
             <div className="flex flex-col items-center p-3 bg-amber-50 rounded-lg">
               <Users className="h-5 w-5 text-amber-500 mb-1" />
@@ -163,26 +163,10 @@ export default function RecipeDetail() {
           <TabsTrigger value="comments">Comments</TabsTrigger>
         </TabsList>
         <TabsContent value="ingredients" className="mt-6">
-          <ul className="space-y-2">
-            {recipe.ingredients.map((ingredient, index) => (
-              <li key={index} className="flex items-center">
-                <div className="h-2 w-2 rounded-full bg-amber-500 mr-3"></div>
-                {ingredient}
-              </li>
-            ))}
-          </ul>
+            {`${recipe.ingredients}`}
         </TabsContent>
         <TabsContent value="instructions" className="mt-6">
-          <ol className="space-y-4">
-            {recipe.instructions.map((instruction, index) => (
-              <li key={index} className="flex">
-                <span className="flex-shrink-0 flex items-center justify-center h-6 w-6 rounded-full bg-amber-100 text-amber-800 font-medium mr-3">
-                  {index + 1}
-                </span>
-                <p>{instruction}</p>
-              </li>
-            ))}
-          </ol>
+            {`${recipe.instructions}`}
         </TabsContent>
         <TabsContent value="comments" className="mt-6">
           <div className="mb-6">
