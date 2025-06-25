@@ -10,6 +10,7 @@ import { Recipe } from "@/lib/type";
 import { ProfileHeader } from "./components/ProfileHeader";
 import { RecipeForm } from "./components/RecipeForm";
 import { RecipeList } from "./components/RecipeList";
+
 import { API_BASE } from "@/lib/config";
 
 export default function ProfilePage() {
@@ -59,7 +60,7 @@ export default function ProfilePage() {
             <TabsList className="grid grid-cols-3">
               <TabsTrigger value="my-recipes">My Recipes</TabsTrigger>
               <TabsTrigger value="add-recipe">Add Recipe</TabsTrigger>
-              <TabsTrigger value="saved-recipe">Saved Recipes</TabsTrigger>
+              <TabsTrigger value="save-recipe">Saved Recipe</TabsTrigger>
             </TabsList>
 
             <TabsContent value="my-recipes">
