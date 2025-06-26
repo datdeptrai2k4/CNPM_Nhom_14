@@ -11,10 +11,17 @@ export async function fetchCommentsByRecipe(recipeId: string) {
 export async function addComment(data: { userId: string; recipeId: string; content: string }) {
   const res = await fetch(`${API_BASE}/api/comments`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
+    headers: { "Content-Type": "application/json" },
   });
-  if (!res.ok) throw new Error("Failed to add comment");
+  if (!res.ok) {
+    let msg = "Failed to add comment";
+    try { 
+      const err = await res.json();
+      msg = err.error || msg;
+    } catch {}
+    throw new Error(msg);
+  }
   return res.json();
 }
 
@@ -28,3 +35,4 @@ export async function deleteComment(commentId: number | string) {
     }
     return await res.json();
   }
+
