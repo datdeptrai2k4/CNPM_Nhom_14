@@ -3,7 +3,7 @@ import { Card, CardHeader, CardContent, CardFooter, CardDescription, CardTitle }
 import { Button } from "@/components/atoms/visuals/button";
 import { Settings } from "lucide-react";
 
-export function ProfileHeader({ userData }: { userData: any }) {
+export function ProfileHeader({ userData, recipeCount, savedRecipeCount }: { userData: any, recipeCount: number, savedRecipeCount: number }) {
   return (
     <Card>
       <CardHeader className="flex flex-col items-center text-center">
@@ -12,16 +12,18 @@ export function ProfileHeader({ userData }: { userData: any }) {
           <AvatarFallback>{userData.fullName}</AvatarFallback>
         </Avatar>
         <CardTitle className="mt-4">{userData.fullName}</CardTitle>
-        <CardDescription>@{userData.username}</CardDescription>
+        <CardDescription>@{userData.username || userData?.emailAddresses[0].emailAddress}</CardDescription>
       </CardHeader>
       <CardContent className="text-center">
         <div className="flex justify-center gap-6">
-          {["recipeCount", "savedRecipeCount"].map((key) => (
-            <div key={key}>
-              <p className="font-bold">{userData[key]}</p>
-              <p className="text-sm text-gray-500">{key.replace(/([A-Z])/g, " $1")}</p>
+            <div>
+              <p className="font-bold">{recipeCount}</p>
+              <p className="text-sm text-gray-500">Recipe Count</p>
             </div>
-          ))}
+            <div>
+              <p className="font-bold">{savedRecipeCount}</p>
+              <p className="text-sm text-gray-500">Saved Recipe Count</p>
+            </div>
         </div>
       </CardContent>
       <CardFooter>
