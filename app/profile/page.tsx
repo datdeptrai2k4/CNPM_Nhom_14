@@ -35,8 +35,6 @@ export default function ProfilePage() {
         .then((data) => {
           setRecipeCount(data);
         });
-      
-        // user["recipeCount"] = recipeCount
   }, [user]);
 
   if (!user) return <div className="text-center py-10">Loading...</div>;
@@ -53,7 +51,7 @@ export default function ProfilePage() {
       </Button>
 
       <div className="flex flex-col md:flex-row gap-8 items-start">
-        <ProfileHeader userData={user} />
+        <ProfileHeader userData={user} recipeCount={recipeCount} savedRecipeCount={savedRecipeCount}/>
         <div className="w-full md:w-2/3">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="grid grid-cols-3">
