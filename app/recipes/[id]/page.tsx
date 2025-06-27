@@ -103,7 +103,7 @@ export default function RecipeDetail() {
             <div className="flex items-center">
               <Star className="h-5 w-5 fill-amber-400 text-amber-400" />
               <span className="ml-1 font-medium">
-                {recipe.rating.toFixed(1)}
+                {recipe.rating?.toFixed(1)}
               </span>
             </div>
             <span className="mx-2 text-gray-300">|</span>
@@ -171,11 +171,7 @@ export default function RecipeDetail() {
         <TabsContent value="comments" className="mt-6">
           <div className="mb-6">
             <h3 className="text-lg font-semibold mb-2">Add a comment</h3>
-            <Textarea
-              placeholder="Share your thoughts or tips about this recipe..."
-              className="mb-2"
-            />
-            <Button>Post Comment</Button>
+            
           </div>
           <CommentSection recipeId={id} />
         </TabsContent>
