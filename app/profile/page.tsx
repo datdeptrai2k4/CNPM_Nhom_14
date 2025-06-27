@@ -31,11 +31,17 @@ export default function ProfilePage() {
         setLoading(false);
       });
     
-      fetch(`${API_BASE}/api/users/recipe-count/${user.id}`)
-        .then((res) => res.json())
-        .then((data) => {
-          setRecipeCount(data);
-        });
+    fetch(`${API_BASE}/api/recipes/user/${user.id}`)
+      .then((res) => res.json())
+      .then((data) => {
+        setRecipeCount(data.length);
+      });
+
+    fetch(`${API_BASE}/api/saved-recipes/user?userId=${user.id}`)
+      .then((res) => res.json())
+      .then((data) => {
+        setSavedRecipeCount(data.length);
+      });
   }, [user]);
 
   if (!user) return <div className="text-center py-10">Loading...</div>;

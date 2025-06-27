@@ -20,7 +20,6 @@ import {
   TabsList,
   TabsTrigger
 } from "@/components/molecules/navigation/tabs";
-import { Textarea } from "@/components/atoms/form/textarea";
 import { CommentSection } from "@/components/organisms/content/comment-section";
 import { getFullImageUrl } from "@/lib/utils";
 import { API_BASE } from "@/lib/config";
