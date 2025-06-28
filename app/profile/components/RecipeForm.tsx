@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -14,15 +14,20 @@ import { Textarea } from "@/components/atoms/form/textarea";
 import { Button } from "@/components/atoms/visuals/button";
 import { API_BASE } from "@/lib/config";
 import { Recipe } from "@/lib/type";
+import { updateRecipe } from "@/lib/api/recipe";
 
 export const RecipeForm = ({
   username,
   userId,
   onCreated,
+  editingRecipe,
+  onCancel,
 }: {
   username: string,
   userId: string;
   onCreated: (newRecipe: Recipe) => void;
+  editingRecipe?: Recipe | null;
+  onCancel?: () => void;
 }) => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -36,6 +41,37 @@ export const RecipeForm = ({
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imageUrl, setImageUrl] = useState<string>("");
   const [imagePath, setImagePath] = useState<string>("");
+
+  // Populate form when editing
+  useEffect(() => {
+    if (editingRecipe) {
+      setTitle(editingRecipe.title || "");
+      setDescription(editingRecipe.description || "");
+      setIngredients(editingRecipe.ingredients || "");
+      setInstructions(editingRecipe.instructions || "");
+      setPrepTime(editingRecipe.prepTime || 10);
+      setCookTime(editingRecipe.cookTime || 10);
+      setServings(editingRecipe.servings || 1);
+      setCategoryId(editingRecipe.categoryId || 1);
+      setVideoUrl(editingRecipe.videoUrl || "");
+      setImagePath(editingRecipe.imageUrl || "");
+      // For editing, we don't set imageFile or imageUrl since the image is already uploaded
+    } else {
+      // Reset form for new recipe
+      setTitle("");
+      setDescription("");
+      setIngredients("");
+      setInstructions("");
+      setPrepTime(10);
+      setCookTime(10);
+      setServings(1);
+      setCategoryId(1);
+      setVideoUrl("");
+      setImageFile(null);
+      setImageUrl("");
+      setImagePath("");
+    }
+  }, [editingRecipe]);
 
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -66,11 +102,11 @@ export const RecipeForm = ({
     }
   };
 
-  const handleAddRecipe = async (e: React.FormEvent) => {
+  const handleSubmitRecipe = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title || !ingredients || !categoryId) return;
 
-    const newRecipe = {
+    const recipeData = {
       title,
       description,
       ingredients,
@@ -85,40 +121,56 @@ export const RecipeForm = ({
       categoryId,
     };
 
-    const res = await fetch(`${API_BASE}/api/recipes/`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(newRecipe),
-    });
+    try {
+      let result;
+      if (editingRecipe) {
+        // Update existing recipe
+        result = await updateRecipe(editingRecipe.id, recipeData);
+        result = result.recipe; // Extract recipe from response
+      } else {
+        // Create new recipe
+        const res = await fetch(`${API_BASE}/api/recipes/`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(recipeData),
+        });
+        if (!res.ok) throw new Error("Failed to create recipe");
+        result = await res.json();
+      }
 
-    if (res.ok) {
-      const created = await res.json();
-      onCreated(created);
-      setTitle("");
-      setDescription("");
-      setIngredients("");
-      setInstructions("");
-      setImageFile(null);
-      setImageUrl("");
-      setImagePath("");
-      setPrepTime(10);
-      setCookTime(10);
-      setServings(1);
-      setVideoUrl("");
-      setCategoryId(1);
-    } else {
-      alert("Failed to add recipe!");
+      onCreated(result);
+      
+      if (!editingRecipe) {
+        // Only reset form for new recipes, not edits
+        setTitle("");
+        setDescription("");
+        setIngredients("");
+        setInstructions("");
+        setImageFile(null);
+        setImageUrl("");
+        setImagePath("");
+        setPrepTime(10);
+        setCookTime(10);
+        setServings(1);
+        setVideoUrl("");
+        setCategoryId(1);
+      }
+    } catch (error) {
+      console.error("Failed to save recipe:", error);
+      alert(editingRecipe ? "Failed to update recipe!" : "Failed to add recipe!");
     }
   };
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Add New Recipe</CardTitle>
-        <CardDescription>Share your culinary creation</CardDescription>
+        <CardTitle>{editingRecipe ? "Edit Recipe" : "Add New Recipe"}</CardTitle>
+        <CardDescription>
+          {editingRecipe ? "Update your recipe details" : "Share your culinary creation"}
+        </CardDescription>
       </CardHeader>
       <CardContent>
-        <form className="space-y-4" onSubmit={handleAddRecipe}>
+        <form className="space-y-4" onSubmit={handleSubmitRecipe}>
           <div className="space-y-2">
             <Label htmlFor="title">Recipe Title</Label>
             <Input
@@ -216,7 +268,7 @@ export const RecipeForm = ({
               accept="image/*"
               className="hidden"
               onChange={handleImageChange}
-              required
+              required={!editingRecipe}
             />
             {imageFile && (
               <img
@@ -235,9 +287,21 @@ export const RecipeForm = ({
               onChange={(e) => setVideoUrl(e.target.value)}
             />
           </div>
-          <Button type="submit" className="w-full">
-            Publish Recipe
-          </Button>
+          <div className="flex gap-4">
+            <Button type="submit" className="flex-1">
+              {editingRecipe ? "Update Recipe" : "Publish Recipe"}
+            </Button>
+            {editingRecipe && onCancel && (
+              <Button 
+                type="button" 
+                variant="outline" 
+                className="flex-1"
+                onClick={onCancel}
+              >
+                Cancel
+              </Button>
+            )}
+          </div>
         </form>
       </CardContent>
     </Card>
