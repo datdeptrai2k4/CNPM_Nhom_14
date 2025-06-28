@@ -20,7 +20,6 @@ import {
   TabsList,
   TabsTrigger
 } from "@/components/molecules/navigation/tabs";
-import { Textarea } from "@/components/atoms/form/textarea";
 import { CommentSection } from "@/components/organisms/content/comment-section";
 import { getFullImageUrl } from "@/lib/utils";
 import { API_BASE } from "@/lib/config";
@@ -31,7 +30,6 @@ export default function RecipeDetail() {
   const id = params?.id as string;
   const [isNotFound, setIsNotFound] = useState(false);
   const [recipe, setRecipe] = useState<Recipe | null>(null);
-  const [userRating, setUserRating] = useState<number | null>(null);
 
   useEffect(() => {
     const getRecipeById = async () => {
@@ -47,16 +45,12 @@ export default function RecipeDetail() {
         setIsNotFound(true);
       }
     };
-
     if (id) getRecipeById();
   }, [id]);
-  
-  const handleRating = (rating: number) => setUserRating(rating);
 
   if (isNotFound) {
-    notFound(); // triggers Next.js built-in 404 page
+    notFound();
   }
-
   if (!recipe) return null;
 
   return (
@@ -81,7 +75,6 @@ export default function RecipeDetail() {
             sizes="(max-width: 768px) 100vw, 50vw"
           />
         </div>
-
         <div>
           <div className="flex justify-between items-start">
             <h1 className="text-3xl font-bold">{recipe.title}</h1>
@@ -96,20 +89,21 @@ export default function RecipeDetail() {
               </Button>
             </div>
           </div>
-
           <p className="text-gray-600 mt-2">{recipe.description}</p>
-
           <div className="flex items-center mt-4">
             <div className="flex items-center">
               <Star className="h-5 w-5 fill-amber-400 text-amber-400" />
               <span className="ml-1 font-medium">
-                {recipe.rating?.toFixed(1)}
+                {recipe.rating?.toFixed(1) ?? "0.0"}
+              </span>
+              {/* Hiện số lượt đánh giá nếu có */}
+              <span className="ml-2 text-sm text-gray-500">
+                ({recipe.ratingCount ?? 0} đánh giá)
               </span>
             </div>
             <span className="mx-2 text-gray-300">|</span>
             <span>By {recipe.author}</span>
           </div>
-
           <div className="grid grid-cols-3 gap-4 mt-6">
             <div className="flex flex-col items-center p-3 bg-amber-50 rounded-lg">
               <Clock className="h-5 w-5 text-amber-500 mb-1" />
@@ -127,35 +121,9 @@ export default function RecipeDetail() {
               <span className="font-medium">{recipe.servings}</span>
             </div>
           </div>
-
-          <div className="mt-6">
-            <h3 className="text-lg font-semibold mb-2">Rate this recipe</h3>
-            <div className="flex">
-              {[1, 2, 3, 4, 5].map((rating) => (
-                <button
-                  key={rating}
-                  onClick={() => handleRating(rating)}
-                  className="focus:outline-none"
-                >
-                  <Star
-                    className={`h-6 w-6 ${
-                      userRating && rating <= userRating
-                        ? "fill-amber-400 text-amber-400"
-                        : "text-gray-300"
-                    }`}
-                  />
-                </button>
-              ))}
-              <span className="ml-2 text-sm text-gray-500">
-                {userRating
-                  ? `You rated this ${userRating} stars`
-                  : "Click to rate"}
-              </span>
-            </div>
-          </div>
+          {/* ĐÃ XOÁ PHẦN RATE BÊN NGOÀI, CHỈ ĐỂ LẠI Ở COMMENT-SECTION */}
         </div>
       </div>
-
       <Tabs defaultValue="ingredients" className="mt-12">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="ingredients">Ingredients</TabsTrigger>
@@ -171,7 +139,6 @@ export default function RecipeDetail() {
         <TabsContent value="comments" className="mt-6">
           <div className="mb-6">
             <h3 className="text-lg font-semibold mb-2">Add a comment</h3>
-            
           </div>
           <CommentSection recipeId={id} />
         </TabsContent>
