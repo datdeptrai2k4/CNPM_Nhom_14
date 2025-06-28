@@ -6,10 +6,21 @@ import { useRouter } from "next/navigation";
 import { Home } from "lucide-react";
 import { Button } from "@/components/atoms/visuals/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/molecules/navigation/tabs";
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/feedback/alert-dialog";
 import { Recipe } from "@/lib/type";
 import { ProfileHeader } from "./components/ProfileHeader";
 import { RecipeForm } from "./components/RecipeForm";
 import { RecipeList } from "./components/RecipeList";
+import { deleteRecipe } from "@/lib/api/recipe";
 
 import { API_BASE } from "@/lib/config";
 
@@ -23,6 +34,10 @@ export default function ProfilePage() {
   const [savedRecipeCount, setSavedRecipeCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [loadingofSaved, setLoadingofSaved] = useState(true);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [recipeToDelete, setRecipeToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [editingRecipe, setEditingRecipe] = useState<Recipe | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -68,6 +83,38 @@ export default function ProfilePage() {
         });
   }, [user]);
 
+  const handleEdit = (recipeId: string) => {
+    const recipe = userRecipes.find(r => r.id === recipeId);
+    if (recipe) {
+      setEditingRecipe(recipe);
+      setActiveTab("add-recipe");
+    }
+  };
+
+  const handleDelete = (recipeId: string) => {
+    setRecipeToDelete(recipeId);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!recipeToDelete || !user) return;
+    
+    setIsDeleting(true);
+    try {
+      await deleteRecipe(recipeToDelete);
+      // Remove from local state
+      setUserRecipes(prev => prev.filter(recipe => recipe.id !== recipeToDelete));
+      setRecipeCount(prev => prev - 1);
+      setDeleteDialogOpen(false);
+      setRecipeToDelete(null);
+    } catch (error) {
+      console.error("Failed to delete recipe:", error);
+      alert("Failed to delete recipe. Please try again.");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   if (!user) return <div className="text-center py-10">Loading...</div>;
 
   return (
@@ -96,6 +143,9 @@ export default function ProfilePage() {
                 recipes={userRecipes}
                 loading={loading}
                 username={null}
+                isOwner={true}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
               />
             </TabsContent>
 
@@ -103,9 +153,23 @@ export default function ProfilePage() {
               <RecipeForm
                 userId={user.id}
                 username={user.username || user.primaryEmailAddress?.emailAddress.split("@")[0] || "unknown"}
+                editingRecipe={editingRecipe}
                 onCreated={(recipe) => {
-                  setUserRecipes((prev) => [...prev, recipe]);
+                  if (editingRecipe) {
+                    // Update existing recipe
+                    setUserRecipes((prev) => 
+                      prev.map(r => r.id === editingRecipe.id ? recipe : r)
+                    );
+                    setEditingRecipe(null);
+                  } else {
+                    // Add new recipe
+                    setUserRecipes((prev) => [...prev, recipe]);
+                    setRecipeCount(prev => prev + 1);
+                  }
                   setActiveTab("my-recipes");
+                }}
+                onCancel={() => {
+                  setEditingRecipe(null);
                 }}
               />
             </TabsContent>
@@ -120,6 +184,27 @@ export default function ProfilePage() {
           </Tabs>
         </div>
       </div>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Recipe</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this recipe? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDelete}
+              disabled={isDeleting}
+              className="bg-red-500 hover:bg-red-600"
+            >
+              {isDeleting ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

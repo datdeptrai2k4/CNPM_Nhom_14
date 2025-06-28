@@ -1,7 +1,7 @@
 import Image from "next/image"
 import Link from "next/link"
 import { useUser } from "@clerk/nextjs"
-import { Star, Check } from "lucide-react"
+import { Star, Check, Edit, Trash2 } from "lucide-react"
 import { API_BASE } from "@/lib/config"
 
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/atoms/layout/card"
@@ -15,9 +15,12 @@ interface RecipeCardProps {
   rating: number
   author: string
   image: string
+  showOwnerActions?: boolean
+  onEdit?: (id: string) => void
+  onDelete?: (id: string) => void
 }
 
-export function RecipeCard({ id, title, description, rating, author, image }: RecipeCardProps) {
+export function RecipeCard({ id, title, description, rating, author, image, showOwnerActions, onEdit, onDelete }: RecipeCardProps) {
   const { user } = useUser();
   const [successSave, setSuccessSave] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -72,16 +75,32 @@ export function RecipeCard({ id, title, description, rating, author, image }: Re
         <p className="text-sm">{description}</p>
       </CardContent>
       <CardFooter className="flex justify-between">
-        {successSave ? (
-          <Button variant="outline" size="sm" disabled>
-            <Check className="w-4 h-4 mr-1" />
-            Saved
-          </Button>
-        ) : (
-          <Button variant="outline" size="sm" onClick={handleSave} disabled={isLoading}>
-            {isLoading ? "Saving..." : "Save"}
-          </Button>
-        )}
+        <div className="flex gap-2">
+          {!showOwnerActions && (
+            successSave ? (
+              <Button variant="outline" size="sm" disabled>
+                <Check className="w-4 h-4 mr-1" />
+                Saved
+              </Button>
+            ) : (
+              <Button variant="outline" size="sm" onClick={handleSave} disabled={isLoading}>
+                {isLoading ? "Saving..." : "Save"}
+              </Button>
+            )
+          )}
+          {showOwnerActions && (
+            <>
+              <Button variant="outline" size="sm" onClick={() => onEdit?.(id)}>
+                <Edit className="w-4 h-4 mr-1" />
+                Edit
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => onDelete?.(id)}>
+                <Trash2 className="w-4 h-4 mr-1" />
+                Delete
+              </Button>
+            </>
+          )}
+        </div>
         <Link href={`/recipes/${id}`}>
           <Button size="sm">View Recipe</Button>
         </Link>

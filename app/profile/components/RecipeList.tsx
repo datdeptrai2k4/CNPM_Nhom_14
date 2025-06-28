@@ -7,10 +7,16 @@ export const RecipeList = ({
   recipes,
   loading,
   username,
+  isOwner = false,
+  onEdit,
+  onDelete,
 }: {
   recipes: Recipe[];
   loading: boolean;
   username: string | null;
+  isOwner?: boolean;
+  onEdit?: (id: string) => void;
+  onDelete?: (id: string) => void;
 }) => {
   useEffect(() => {
     console.log(username);
@@ -36,6 +42,9 @@ export const RecipeList = ({
           image={getFullImageUrl(recipe.imageUrl)}
           rating={typeof recipe.rating === "number" ? recipe.rating : 0}
           author={username || recipe.author}
+          showOwnerActions={isOwner}
+          onEdit={onEdit}
+          onDelete={onDelete}
         />
       ))}
     </div>
