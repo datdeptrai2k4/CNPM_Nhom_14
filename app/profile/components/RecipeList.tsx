@@ -1,6 +1,7 @@
 import { Recipe } from "@/lib/type";
 import { RecipeCard } from "@/components/organisms/content/recipe-card";
 import { getFullImageUrl } from "@/lib/utils";
+import { useEffect } from "react";
 
 export const RecipeList = ({
   recipes,
@@ -9,8 +10,12 @@ export const RecipeList = ({
 }: {
   recipes: Recipe[];
   loading: boolean;
-  username: string;
+  username: string | null;
 }) => {
+  useEffect(() => {
+    console.log(username);
+  })
+  
   if (loading) return <div>Loading recipes...</div>;
 
   if (recipes.length === 0)
@@ -30,7 +35,7 @@ export const RecipeList = ({
           {...recipe}
           image={getFullImageUrl(recipe.imageUrl)}
           rating={typeof recipe.rating === "number" ? recipe.rating : 0}
-          author={username}
+          author={username || recipe.author}
         />
       ))}
     </div>

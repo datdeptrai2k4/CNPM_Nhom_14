@@ -7,10 +7,12 @@ export const getFullImageUrl = (url: string | undefined) => {
     url = '';
   }
 
+  if (url === ''){
+    return null;
+  }
+
   const something = url?.startsWith("http") ? url : `${API_BASE}${url}`
-
-  console.log(something);
-
+  
   return something;
 }
 
