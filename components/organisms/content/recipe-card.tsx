@@ -1,9 +1,12 @@
 import Image from "next/image"
 import Link from "next/link"
-import { Star } from "lucide-react"
+import { useUser } from "@clerk/nextjs"
+import { Star, Check } from "lucide-react"
+import { API_BASE } from "@/lib/config"
 
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/atoms/layout/card"
 import { Button } from "@/components/atoms/visuals/button"
+import { useState } from "react"
 
 interface RecipeCardProps {
   id: string
@@ -15,6 +18,33 @@ interface RecipeCardProps {
 }
 
 export function RecipeCard({ id, title, description, rating, author, image }: RecipeCardProps) {
+  const { user } = useUser();
+  const [successSave, setSuccessSave] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const saveRecipe = async (userId: string, recipeId: string): Promise<boolean> => {
+    try {
+      const res = await fetch(`${API_BASE}/api/saved-recipes/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ userId, recipeId })
+      });
+      return res.ok;
+    } catch (error) {
+      console.error("Error saving recipe:", error);
+      return false;
+    }
+  }
+
+  const handleSave = async () => {
+    setIsLoading(true);
+    const result = await saveRecipe(user?.id || "unknown user id", id);
+    setSuccessSave(result);
+    setIsLoading(false);
+  }
+
   return (
     <Card className="overflow-hidden">
       <div className="relative h-48">
@@ -42,9 +72,16 @@ export function RecipeCard({ id, title, description, rating, author, image }: Re
         <p className="text-sm">{description}</p>
       </CardContent>
       <CardFooter className="flex justify-between">
-        <Button variant="outline" size="sm">
-          Save
-        </Button>
+        {successSave ? (
+          <Button variant="outline" size="sm" disabled>
+            <Check className="w-4 h-4 mr-1" />
+            Saved
+          </Button>
+        ) : (
+          <Button variant="outline" size="sm" onClick={handleSave} disabled={isLoading}>
+            {isLoading ? "Saving..." : "Save"}
+          </Button>
+        )}
         <Link href={`/recipes/${id}`}>
           <Button size="sm">View Recipe</Button>
         </Link>

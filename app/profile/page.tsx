@@ -10,6 +10,7 @@ import { Recipe } from "@/lib/type";
 import { ProfileHeader } from "./components/ProfileHeader";
 import { RecipeForm } from "./components/RecipeForm";
 import { RecipeList } from "./components/RecipeList";
+
 import { API_BASE } from "@/lib/config";
 
 export default function ProfilePage() {
@@ -17,9 +18,11 @@ export default function ProfilePage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("my-recipes");
   const [userRecipes, setUserRecipes] = useState<Recipe[]>([]);
+  const [savedRecipes, setSavedRecipes] = useState<Recipe[]>([]);
   const [recipeCount, setRecipeCount] = useState(0);
   const [savedRecipeCount, setSavedRecipeCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [loadingofSaved, setLoadingofSaved] = useState(true);
 
   useEffect(() => {
     if (!user) return;
@@ -27,13 +30,41 @@ export default function ProfilePage() {
       .then((res) => res.json())
       .then((data) => {
         setUserRecipes(data);
+        setRecipeCount(data.length);
         setLoading(false);
       });
-    
-      fetch(`${API_BASE}/api/users/recipe-count/${user.id}`)
+
+      fetch(`${API_BASE}/api/saved-recipes/user?userId=${user.id}`)
         .then((res) => res.json())
-        .then((data) => {
-          setRecipeCount(data);
+        .then(async (res: { recipeId: string }[]) => {
+          const ids = res.map((r) => r.recipeId);
+
+          // If no saved recipes
+          if (ids.length === 0) {
+            setSavedRecipes([]);
+            setSavedRecipeCount(0);
+            setLoadingofSaved(false);
+            return;
+          }
+
+          // Fetch all recipes by ID in parallel
+          const recipes: Recipe[] = await Promise.all(
+            ids.map((id) =>
+              fetch(`${API_BASE}/api/recipes/${id}`)
+                .then((res) => res.json())
+                .catch(() => null) // in case a recipe was deleted
+            )
+          ).then((list) => list.filter(Boolean)); // remove failed fetches
+
+          setSavedRecipes(recipes);
+          setSavedRecipeCount(recipes.length);
+          setLoadingofSaved(false);
+        })
+        .catch((err) => {
+          console.error("Failed to fetch saved recipe IDs", err);
+          setSavedRecipes([]);
+          setSavedRecipeCount(0);
+          setLoadingofSaved(false);
         });
   }, [user]);
 
@@ -57,16 +88,14 @@ export default function ProfilePage() {
             <TabsList className="grid grid-cols-3">
               <TabsTrigger value="my-recipes">My Recipes</TabsTrigger>
               <TabsTrigger value="add-recipe">Add Recipe</TabsTrigger>
-              <TabsTrigger value="saved-recipe">Saved Recipes</TabsTrigger>
+              <TabsTrigger value="saved-recipe">Saved Recipe</TabsTrigger>
             </TabsList>
 
             <TabsContent value="my-recipes">
               <RecipeList
                 recipes={userRecipes}
                 loading={loading}
-                username={
-                  user.username || user.primaryEmailAddress?.emailAddress.split("@")[0] || "unknown"
-                }
+                username={null}
               />
             </TabsContent>
 
@@ -78,6 +107,14 @@ export default function ProfilePage() {
                   setUserRecipes((prev) => [...prev, recipe]);
                   setActiveTab("my-recipes");
                 }}
+              />
+            </TabsContent>
+
+            <TabsContent value="saved-recipe">
+              <RecipeList
+                recipes={savedRecipes}
+                loading={loadingofSaved}
+                username={null}
               />
             </TabsContent>
           </Tabs>
