@@ -12,7 +12,7 @@ import {
   Bookmark,
   Share2
 } from "lucide-react";
-
+import { useUser } from "@clerk/nextjs";
 import { Button } from "@/components/atoms/visuals/button";
 import {
   Tabs,
@@ -28,9 +28,45 @@ import { Recipe } from "@/lib/type";
 export default function RecipeDetail() {
   const params = useParams();
   const id = params?.id as string;
+  const { user } = useUser();
   const [isNotFound, setIsNotFound] = useState(false);
   const [recipe, setRecipe] = useState<Recipe | null>(null);
   const [userRating, setUserRating] = useState<number | null>(null);
+  const [isSaved, setIsSaved] = useState(false);
+
+  const saveRecipe = async (
+    userId: string,
+    recipeId: string,
+    method: "POST" | "DELETE"
+  ): Promise<boolean> => {
+    try {
+      const url =
+        method === "POST"
+          ? `${API_BASE}/api/saved-recipes/`
+          : `${API_BASE}/api/saved-recipes/remove`;
+
+      const res = await fetch(url, {
+        method: "POST", // always POST since /remove is also a POST route now
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ userId, recipeId })
+      });
+
+      return res.ok;
+    } catch (error) {
+      console.error("Error saving/removing recipe:", error);
+      return false;
+    }
+  };
+
+  const handleSave = async () => {
+    const method = isSaved ? "DELETE" : "POST"; // logical toggle
+    const result = await saveRecipe(user?.id || "unknown", id, method);
+    if (result) {
+      setIsSaved(!isSaved); // toggle state on success
+    }
+  };
 
   useEffect(() => {
     const getRecipeById = async () => {
@@ -40,16 +76,23 @@ export default function RecipeDetail() {
           setIsNotFound(true);
           return;
         }
+
         const data: Recipe = await res.json();
         setRecipe(data);
+
+        if (user?.id) {
+          const checkRes = await fetch(`${API_BASE}/api/saved-recipes?userId=${user?.id}&recipeId=${recipe?.id}`)
+          const saved = await checkRes.json();
+          setIsSaved(saved.length > 0); // ✅ Adjust depending on what API returns
+        }
       } catch (err) {
         setIsNotFound(true);
       }
     };
 
     if (id) getRecipeById();
-  }, [id]);
-  
+  }, [id, user?.id]);
+    
   const handleRating = (rating: number) => setUserRating(rating);
 
   if (isNotFound) {
@@ -73,7 +116,7 @@ export default function RecipeDetail() {
       <div className="grid md:grid-cols-2 gap-8">
         <div className="relative h-[400px] md:h-[500px] rounded-lg overflow-hidden">
           <Image
-            src={getFullImageUrl(recipe.imageUrl)}
+            src={getFullImageUrl(recipe.imageUrl) || "/placeholder.svg"}
             alt={recipe.title}
             fill
             className="object-cover"
@@ -85,8 +128,8 @@ export default function RecipeDetail() {
           <div className="flex justify-between items-start">
             <h1 className="text-3xl font-bold">{recipe.title}</h1>
             <div className="flex space-x-2">
-              <Button variant="outline" size="icon">
-                <Bookmark className="h-4 w-4" />
+              <Button variant="outline" size="icon" onClick={handleSave}>
+                <Bookmark className="h-4 w-4" fill={isSaved ? "currentColor" : "none"}/>
                 <span className="sr-only">Save recipe</span>
               </Button>
               <Button variant="outline" size="icon">
