@@ -1,7 +1,9 @@
-"use client"
+"use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { Search } from "lucide-react";
+import { API_BASE } from "@/lib/config";
 
 import { Button } from "@/components/atoms/visuals/button";
 import { Input } from "@/components/atoms/form/input";
@@ -9,7 +11,39 @@ import { RecipeCard } from "@/components/organisms/content/recipe-card";
 import { FeaturedRecipes } from "@/components/organisms/content/featured-recipes";
 import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/nextjs";
 
+interface Recipe {
+  id: string;
+  title: string;
+  description: string;
+  rating?: number;
+  author: string;
+  imageUrl?: string;
+  // add more fields if needed
+}
+
 export default function Home() {
+  const [latestRecipes, setLatestRecipes] = useState<Recipe[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showAll, setShowAll] = useState(false);
+
+  useEffect(() => {
+    fetch(`${API_BASE}/api/recipes`)
+      .then((res) => res.json())
+      .then((data) => {
+        // Sort by createdAt descending if available, else fallback to id (if using UUID v1)
+        const sorted = data.sort((a: any, b: any) =>
+          b.createdAt && a.createdAt
+            ? new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+            : 0
+        );
+        setLatestRecipes(sorted);
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
+  // Only show 3 newest recipes unless showAll is true
+  const recipesToShow = showAll ? latestRecipes : latestRecipes.slice(0, 3);
+
   return (
     <div className="flex flex-col min-h-screen">
       <header className="px-4 lg:px-6 h-14 flex items-center border-b">
@@ -106,35 +140,44 @@ export default function Home() {
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
-              <RecipeCard
-                id="1"
-                title="Banh Mi Saigon"
-                description="A delicious Vietnamese sandwich with pickled vegetables and grilled pork."
-                rating={4.8}
-                author="ChefAlex"
-                image="/images/BanhMi.jpg?height=300&width=400"
-              />
-              <RecipeCard
-                id="2"
-                title="Cơm Tấm"
-                description="A traditional Vietnamese dish of broken rice served with grilled pork and pickled vegetables."
-                rating={4.6}
-                author="CulinaryQueen"
-                image="/images/ComTam.jpg?height=300&width=400"
-              />
-              <RecipeCard
-                id="3"
-                title="Bún Bò Huế"
-                description="A spicy beef noodle soup from the city of Huế, Vietnam."
-                rating={4.9}
-                author="BakingMaster"
-                image="/images/bunbohue.jpg?height=300&width=400"
-              />
+              {loading ? (
+                <div className="col-span-3 text-center text-gray-500">Loading...</div>
+              ) : recipesToShow.length === 0 ? (
+                <div className="col-span-3 text-center text-gray-500">No recipes found.</div>
+              ) : (
+                recipesToShow.map((recipe) => (
+                  <RecipeCard
+                    key={recipe.id}
+                    id={recipe.id}
+                    title={recipe.title}
+                    description={recipe.description}
+                    rating={recipe.rating ?? 0}
+                    author={recipe.author}
+                    image={recipe.imageUrl ?? "/placeholder.jpg"}
+                  />
+                ))
+              )}
             </div>
             <div className="flex justify-center mt-8">
-              <Button variant="outline" className="rounded-full">
-                View All Recipes
-              </Button>
+              {!showAll && latestRecipes.length > 3 ? (
+                <Button
+                  variant="outline"
+                  className="rounded-full"
+                  onClick={() => setShowAll(true)}
+                >
+                  View All Recipes
+                </Button>
+              ) : (
+                showAll && latestRecipes.length > 3 && (
+                  <Button
+                    variant="outline"
+                    className="rounded-full"
+                    onClick={() => setShowAll(false)}
+                  >
+                    Show Less
+                  </Button>
+                )
+              )}
             </div>
           </div>
         </section>
