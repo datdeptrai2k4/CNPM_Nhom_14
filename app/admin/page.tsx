@@ -41,8 +41,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/molecules/overlays/dropdown-menu"
 import { API_BASE } from "@/lib/config"
+import { categoryApi, Category, CategoryApiError } from "@/lib/api/category"
+import { useToast } from "@/components/utils/use-toast"
+import { Toaster } from "@/components/feedback/toaster"
 
-// Mock data
+// Mock data for recipes (keeping this as categories is the focus)
 const MOCK_RECIPES = [
   {
     id: "1",
@@ -63,25 +66,6 @@ const MOCK_RECIPES = [
     views: 85,
     rating: 4.0,
     createdAt: "2023-06-09T10:00:00Z",
-  },
-]
-
-const MOCK_CATEGORIES = [
-  {
-    id: "1",
-    name: "Asian",
-    slug: "asian",
-    description: "Asian cuisine",
-    recipeCount: 5,
-    createdAt: "2023-01-01T09:00:00Z",
-  },
-  {
-    id: "2",
-    name: "Western",
-    slug: "western",
-    description: "Western dishes",
-    recipeCount: 3,
-    createdAt: "2023-02-01T09:00:00Z",
   },
 ]
 
@@ -113,33 +97,143 @@ export default function AdminPage() {
   const [loadingUsers, setLoadingUsers] = useState(true);
   const [recipes, setRecipes] = useState([]);
   const router = useRouter();
+  
+  // Category state management
+  const [categories, setCategories] = useState<Category[]>([])
+  const [loadingCategories, setLoadingCategories] = useState(false)
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null)
+  const { toast } = useToast()
 
+  // Load users on component mount
   useEffect(() => {
-      fetch(`${API_BASE}/api/users/`)
-        .then((res) => res.json())
-        .then((clerkUsers) => {
-          const parsedUsers = clerkUsers.map((user) => ({
-            id: user.id,
-            name: `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.username,
-            username: user.username,
-            email: user.email || "—",
-            avatar: user.imageUrl,
-            status: user.banned ? "banned" : "active",
-            role: user.publicMetadata?.role || "user",
-            createdAt: new Date(user.createdAt),
-            banned: user.banned,
-            public_metadata: user.publicMetadata,
-          }));
+    fetch(`${API_BASE}/api/users/`)
+      .then((res) => res.json())
+      .then((clerkUsers) => {
+        const parsedUsers = clerkUsers.map((user) => ({
+          id: user.id,
+          name: `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.username,
+          username: user.username,
+          email: user.email || "—",
+          avatar: user.imageUrl,
+          status: user.banned ? "banned" : "active",
+          role: user.publicMetadata?.role || "user",
+          createdAt: new Date(user.createdAt),
+          banned: user.banned,
+          public_metadata: user.publicMetadata,
+        }));
 
-          setUsers(parsedUsers);
-          setLoadingUsers(false);
-        });
+        setUsers(parsedUsers);
+        setLoadingUsers(false);
+      })
+      .catch((error) => {
+        console.error('Error loading users:', error);
+        setLoadingUsers(false);
+      });
     fetch(`${API_BASE}/api/recipes`)
       .then((res) => res.json())
       .then((data) => {
         setRecipes(data);
       });
     }, []);
+
+  // Load categories on component mount
+  useEffect(() => {
+    loadCategories();
+  }, []);
+
+  // Category API functions
+  const loadCategories = async () => {
+    try {
+      setLoadingCategories(true);
+      const categoriesData = await categoryApi.getAll();
+      setCategories(categoriesData);
+    } catch (error) {
+      console.error('Error loading categories:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to load categories",
+      });
+    } finally {
+      setLoadingCategories(false);
+    }
+  };
+
+  const handleCreateCategory = async (formData: FormData) => {
+    try {
+      const name = formData.get('name') as string;
+      const description = formData.get('description') as string;
+      
+      const newCategory = await categoryApi.create({
+        name,
+        description: description || undefined,
+      });
+      
+      setCategories(prev => [...prev, newCategory]);
+      setIsDialogOpen(false);
+      
+      toast({
+        title: "Success",
+        description: "Category created successfully",
+      });
+    } catch (error) {
+      console.error('Error creating category:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error instanceof CategoryApiError ? error.message : "Failed to create category",
+      });
+    }
+  };
+
+  const handleUpdateCategory = async (id: number, formData: FormData) => {
+    try {
+      const name = formData.get('name') as string;
+      const description = formData.get('description') as string;
+      
+      const updatedCategory = await categoryApi.update(id, {
+        name,
+        description: description || undefined,
+      });
+      
+      setCategories(prev => prev.map(cat => 
+        cat.id === id ? updatedCategory : cat
+      ));
+      setEditingCategory(null);
+      setIsDialogOpen(false);
+      
+      toast({
+        title: "Success",
+        description: "Category updated successfully",
+      });
+    } catch (error) {
+      console.error('Error updating category:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error instanceof CategoryApiError ? error.message : "Failed to update category",
+      });
+    }
+  };
+
+  const handleDeleteCategory = async (id: number) => {
+    try {
+      await categoryApi.delete(id);
+      setCategories(prev => prev.filter(cat => cat.id !== id));
+      
+      toast({
+        title: "Success",
+        description: "Category deleted successfully",
+      });
+    } catch (error) {
+      console.error('Error deleting category:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error instanceof CategoryApiError ? error.message : "Failed to delete category",
+      });
+    }
+  };
 
   
   const handleToggleStatus = async (userId) => {
@@ -221,6 +315,19 @@ export default function AdminPage() {
                   </p>
                 </CardContent>
               </Card>
+              
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium">Categories</CardTitle>
+                  <BarChart className="h-4 w-4 text-gray-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{categories.length}</div>
+                  <p className="text-xs text-gray-500">
+                    {loadingCategories ? 'Loading...' : 'Total categories'}
+                  </p>
+                </CardContent>
+              </Card>
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle className="text-sm font-medium">Total Users</CardTitle>
@@ -239,7 +346,7 @@ export default function AdminPage() {
                   <BarChart className="h-4 w-4 text-gray-500" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{MOCK_CATEGORIES.length}</div>
+                  <div className="text-2xl font-bold">{categories.length}</div>
                   <p className="text-xs text-gray-500">Active categories</p>
                 </CardContent>
               </Card>
@@ -289,7 +396,11 @@ export default function AdminPage() {
                       <TableRow key={recipe.id}>
                         <TableCell className="font-medium">{recipe.title}</TableCell>
                         <TableCell>{recipe.author}</TableCell>
-                        <TableCell>{MOCK_CATEGORIES.find((c) => c.id === recipe.categoryId)?.name || "Unknown"}</TableCell>
+                        <TableCell>{categories.find((c) => c.id.toString() === recipe.categoryId)?.name || "Unknown"}</TableCell>
+                        <TableCell>
+                          <Badge variant={recipe.status === "published" ? "default" : "outline"}>{recipe.status}</Badge>
+                        </TableCell>
+                        <TableCell>{recipe.views}</TableCell>
                         <TableCell>{recipe.rating.toFixed(1)}</TableCell>
                         <TableCell>{new Date(recipe.createdAt).toLocaleDateString()}</TableCell>
                         <TableCell className="text-right">
@@ -463,39 +574,88 @@ export default function AdminPage() {
                     <CardTitle>Categories</CardTitle>
                     <CardDescription>Manage recipe categories</CardDescription>
                   </div>
-                  <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                  <Dialog 
+                    open={isDialogOpen} 
+                    onOpenChange={(open) => {
+                      setIsDialogOpen(open);
+                      if (!open) {
+                        setEditingCategory(null);
+                      }
+                    }}
+                  >
                     <DialogTrigger asChild>
-                      <Button>
+                      <Button onClick={() => setEditingCategory(null)}>
                         <Plus className="mr-2 h-4 w-4" />
                         Add Category
                       </Button>
                     </DialogTrigger>
                     <DialogContent>
                       <DialogHeader>
-                        <DialogTitle>Create New Category</DialogTitle>
-                        <DialogDescription>Add a new recipe category</DialogDescription>
+                        <DialogTitle>
+                          {editingCategory ? 'Edit Category' : 'Create New Category'}
+                        </DialogTitle>
+                        <DialogDescription>
+                          {editingCategory 
+                            ? 'Update the category information' 
+                            : 'Add a new recipe category'
+                          }
+                        </DialogDescription>
                       </DialogHeader>
-                      <form>
+                      <form onSubmit={(e) => {
+                        e.preventDefault();
+                        const formData = new FormData(e.currentTarget);
+                        if (editingCategory) {
+                          handleUpdateCategory(editingCategory.id, formData);
+                        } else {
+                          handleCreateCategory(formData);
+                        }
+                      }}>
                         <div className="space-y-4">
                           <div>
                             <Label htmlFor="name">Name</Label>
-                            <Input id="name" name="name" required />
+                            <Input 
+                              id="name" 
+                              name="name" 
+                              required 
+                              defaultValue={editingCategory?.name || ''}
+                              placeholder="e.g., Italian Cuisine"
+                            />
                           </div>
                           <div>
-                            <Label htmlFor="slug">Slug</Label>
-                            <Input id="slug" name="slug" required />
+                            <Label htmlFor="slug">Slug (URL-friendly name)</Label>
+                            <Input 
+                              id="slug" 
+                              name="slug" 
+                              defaultValue={editingCategory?.slug || ''}
+                              placeholder="e.g., italian-cuisine (auto-generated if empty)"
+                            />
+                            <p className="text-xs text-gray-500 mt-1">
+                              Leave empty to auto-generate from name
+                            </p>
                           </div>
                           <div>
                             <Label htmlFor="description">Description</Label>
-                            <Textarea id="description" name="description" required />
+                            <Textarea 
+                              id="description" 
+                              name="description" 
+                              defaultValue={editingCategory?.description || ''}
+                              placeholder="Describe this category..."
+                            />
                           </div>
                         </div>
                         <DialogFooter className="mt-6">
-                          <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                          <Button 
+                            type="button" 
+                            variant="outline" 
+                            onClick={() => {
+                              setIsDialogOpen(false);
+                              setEditingCategory(null);
+                            }}
+                          >
                             Cancel
                           </Button>
                           <Button type="submit">
-                            Create Category
+                            {editingCategory ? 'Update Category' : 'Create Category'}
                           </Button>
                         </DialogFooter>
                       </form>
@@ -516,47 +676,83 @@ export default function AdminPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {MOCK_CATEGORIES.map((category) => (
-                      <TableRow key={category.id}>
-                        <TableCell className="font-medium">{category.name}</TableCell>
-                        <TableCell>{category.slug}</TableCell>
-                        <TableCell>{category.description}</TableCell>
-                        <TableCell>{category.recipeCount}</TableCell>
-                        <TableCell>{new Date(category.createdAt).toLocaleDateString()}</TableCell>
-                        <TableCell className="text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                              <DropdownMenuItem>Edit Category</DropdownMenuItem>
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-red-600">
-                                    Delete Category
-                                  </DropdownMenuItem>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      This action cannot be undone. This will permanently delete the category.
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction>Delete</AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                    {loadingCategories ? (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center text-gray-500 text-sm py-8">
+                          Loading categories...
                         </TableCell>
                       </TableRow>
-                    ))}
+                    ) : categories.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center text-gray-500 text-sm py-8">
+                          No categories found. Create your first category!
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      categories.map((category) => (
+                        <TableRow key={category.id}>
+                          <TableCell className="font-medium">{category.name}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline">{category.slug}</Badge>
+                          </TableCell>
+                          <TableCell className="max-w-xs truncate">{category.description}</TableCell>
+                          <TableCell>
+                            <Badge variant="secondary">
+                              {MOCK_RECIPES.filter(r => r.categoryId === category.id.toString()).length}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{new Date(category.createdAt).toLocaleDateString()}</TableCell>
+                          <TableCell className="text-right">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem 
+                                  onClick={() => {
+                                    setEditingCategory(category);
+                                    setIsDialogOpen(true);
+                                  }}
+                                >
+                                  Edit Category
+                                </DropdownMenuItem>
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <DropdownMenuItem 
+                                      onSelect={(e) => e.preventDefault()} 
+                                      className="text-red-600"
+                                    >
+                                      Delete Category
+                                    </DropdownMenuItem>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        This action cannot be undone. This will permanently delete the category "{category.name}" and may affect associated recipes.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                      <AlertDialogAction 
+                                        onClick={() => handleDeleteCategory(category.id)}
+                                        className="bg-red-600 hover:bg-red-700"
+                                      >
+                                        Delete
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
                   </TableBody>
                 </Table>
               </CardContent>
@@ -619,6 +815,7 @@ export default function AdminPage() {
           </TabsContent>
         </Tabs>
       </div>
+      <Toaster />
     </div>
   )
 }
