@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/molecules/navigation/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/atoms/layout/card"
 import { Button } from "@/components/atoms/visuals/button"
@@ -39,6 +39,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/molecules/overlays/dropdown-menu"
+import { API_BASE } from "@/lib/config"
 
 // Mock data
 const MOCK_RECIPES = [
@@ -61,33 +62,6 @@ const MOCK_RECIPES = [
     views: 85,
     rating: 4.0,
     createdAt: "2023-06-09T10:00:00Z",
-  },
-]
-
-const MOCK_USERS = [
-  {
-    id: "1",
-    name: "Alice Smith",
-    username: "alice",
-    email: "alice@example.com",
-    bio: "Food lover",
-    avatar: "",
-    recipeCount: 2,
-    status: "active",
-    role: "admin",
-    createdAt: "2023-05-30T10:00:00Z",
-  },
-  {
-    id: "2",
-    name: "Bob Lee",
-    username: "bob",
-    email: "bob@example.com",
-    bio: "",
-    avatar: "",
-    recipeCount: 1,
-    status: "suspended",
-    role: "user",
-    createdAt: "2023-06-07T10:00:00Z",
   },
 ]
 
@@ -134,28 +108,64 @@ const MOCK_REPORTED = [
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState("dashboard")
   const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [users, setUsers] = useState(MOCK_USERS)
-  // Hàm toggle status
-  const handleToggleStatus = (userId: string) => {
-    setUsers(users =>
-      users.map(user =>
-        user.id === userId
-          ? { ...user, status: user.status === "active" ? "suspended" : "active" }
-          : user
-      )
-    )
-  }
+  const [users, setUsers] = useState([]);
+  const [loadingUsers, setLoadingUsers] = useState(true);
 
-  // Hàm toggle role
-  const handleToggleRole = (userId: string) => {
-    setUsers(users =>
-      users.map(user =>
+  useEffect(() => {
+      fetch(`${API_BASE}/api/users/`)
+        .then((res) => res.json())
+        .then((clerkUsers) => {
+          const parsedUsers = clerkUsers.map((user) => ({
+            id: user.id,
+            name: `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.username,
+            username: user.username,
+            email: user.email || "—",
+            avatar: user.imageUrl,
+            status: user.banned ? "banned" : "active",
+            role: user.publicMetadata?.role || "user",
+            createdAt: new Date(user.createdAt),
+            banned: user.banned,
+            public_metadata: user.publicMetadata,
+          }));
+
+          setUsers(parsedUsers);
+          setLoadingUsers(false);
+        });
+    }, []);
+
+  
+  const handleToggleStatus = async (userId) => {
+    await fetch(`${API_BASE}/api/users/toggle-status`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId }),
+    });
+    //@ts-ignore
+    setUsers((prev) =>
+      prev.map((user) =>
         user.id === userId
-          ? { ...user, role: user.role === "admin" ? "user" : "admin" }
+          ? {
+              ...user,
+              banned: !user.banned,
+              status: user.banned ? "active" : "banned",
+            }
           : user
       )
-    )
-  }
+    );
+  };
+
+  const handleToggleRole = async (userId, currentRole) => {
+    const newRole = currentRole === "admin" ? "user" : "admin";
+    await fetch(`${API_BASE}/api/users/set-role`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId, newRole }),
+    });
+    //@ts-ignore
+    setUsers((prev) =>
+      prev.map((user) => (user.id === userId ? { ...user, role: newRole } : user))
+    );
+  };
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -194,9 +204,9 @@ export default function AdminPage() {
                   <Users className="h-4 w-4 text-gray-500" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{MOCK_USERS.length}</div>
+                  <div className="text-2xl font-bold">{users.length}</div>
                   <p className="text-xs text-gray-500">
-                    +{MOCK_USERS.filter((u) => new Date(u.createdAt) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)).length} this week
+                    +{users.filter((u) => new Date(u.created_at) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)).length} this week
                   </p>
                 </CardContent>
               </Card>
@@ -322,12 +332,6 @@ export default function AdminPage() {
                       <Input className="pl-8 w-[250px]" placeholder="Search users..." />
                     </div>
                     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                      <DialogTrigger asChild>
-                        <Button>
-                          <Plus className="mr-2 h-4 w-4" />
-                          Add User
-                        </Button>
-                      </DialogTrigger>
                       <DialogContent>
                         <DialogHeader>
                           <DialogTitle>Create New User</DialogTitle>
@@ -372,7 +376,6 @@ export default function AdminPage() {
                     <TableRow>
                       <TableHead>User</TableHead>
                       <TableHead>Email</TableHead>
-                      <TableHead>Recipes</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Role</TableHead>
                       <TableHead>Joined</TableHead>
@@ -380,54 +383,58 @@ export default function AdminPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-  {users.map((user) => (
-    <TableRow key={user.id}>
-      <TableCell>
-        <div className="flex items-center gap-3">
-          <Avatar className="h-8 w-8">
-            <AvatarImage src={user.avatar || "/placeholder.svg"} alt={user.name} />
-            <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
-          </Avatar>
-          <div>
-            <p className="font-medium">{user.name}</p>
-            <p className="text-xs text-gray-500">@{user.username}</p>
-          </div>
-        </div>
-      </TableCell>
-      <TableCell>{user.email}</TableCell>
-      <TableCell>{user.recipeCount}</TableCell>
-      <TableCell>
-        <Badge variant={user.status === "active" ? "default" : "destructive"}>{user.status}</Badge>
-      </TableCell>
-      <TableCell>
-        <Badge variant={user.role === "admin" ? "secondary" : "outline"}>{user.role}</Badge>
-      </TableCell>
-      <TableCell>{new Date(user.createdAt).toLocaleDateString()}</TableCell>
-      <TableCell className="text-right">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon">
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem>View Profile</DropdownMenuItem>
-            <DropdownMenuItem>Edit User</DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => handleToggleStatus(user.id)}>
-              {user.status === "active" ? "Suspend User" : "Activate User"}
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleToggleRole(user.id)}>
-              {user.role === "admin" ? "Set as User" : "Set as Admin"}
-            </DropdownMenuItem>
-            {/* ...Các action khác giữ nguyên */}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </TableCell>
-    </TableRow>
-  ))}
-</TableBody>
+                  {loadingUsers ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center text-gray-500 text-sm py-4">
+                        Loading users...
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    users.map((user) => (
+                      <TableRow key={user.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <Avatar className="h-8 w-8">
+                              <AvatarImage src={user.image_url || user.avatar || "/placeholder.svg"} alt={user.name} />
+                              <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <p className="font-medium">{user.name}</p>
+                              <p className="text-xs text-gray-500">{user.username && `@${user.username}`}</p>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>{user.email}</TableCell>
+                        <TableCell>
+                          <Badge variant={user.banned ? "destructive" : "default"}>{user.banned ? "banned" : "active"}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={user.role === "admin" ? "secondary" : "outline"}>{user.role}</Badge>
+                        </TableCell>
+                        <TableCell>{new Date(user.created_at).toLocaleDateString()}</TableCell>
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onClick={() => handleToggleStatus(user.id)}>
+                                {user.status === "active" ? "Suspend User" : "Activate User"}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleToggleRole(user.id, user.role)}>
+                                {user.role === "admin" ? "Set as User" : "Set as Admin"}
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
                 </Table>
               </CardContent>
             </Card>
