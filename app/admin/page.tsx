@@ -375,7 +375,7 @@ export default function AdminPage() {
                       <TableRow key={recipe.id}>
                         <TableCell className="font-medium">{recipe.title}</TableCell>
                         <TableCell>{recipe.author}</TableCell>
-                        <TableCell>{categories.find((c) => c.id.toString() === recipe.categoryId)?.name || "Unknown"}</TableCell>
+                        <TableCell>{categories.find((c) => c.id === recipe.categoryId)?.name || "Unknown"}</TableCell>
                         <TableCell>{recipe.rating.toFixed(1)}</TableCell>
                         <TableCell>{new Date(recipe.createdAt).toLocaleDateString()}</TableCell>
                         <TableCell className="text-right">

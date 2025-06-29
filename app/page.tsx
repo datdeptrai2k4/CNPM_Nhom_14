@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Search } from "lucide-react";
 
+import { useUser } from "@clerk/nextjs";
 import { Button } from "@/components/atoms/visuals/button";
 import { Input } from "@/components/atoms/form/input";
 import { RecipeCard } from "@/components/organisms/content/recipe-card";
@@ -10,6 +11,7 @@ import { FeaturedRecipes } from "@/components/organisms/content/featured-recipes
 import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/nextjs";
 
 export default function Home() {
+  const { user } = useUser()
   return (
     <div className="flex flex-col min-h-screen">
       <header className="px-4 lg:px-6 h-14 flex items-center border-b">
@@ -41,12 +43,12 @@ export default function Home() {
           >
             My Recipes
           </Link>
-          <Link
+          {user?.publicMetadata.role === "admin" && <Link
             className="text-sm font-medium hover:underline underline-offset-4"
             href="/admin"
           >
             Admin
-          </Link>
+          </Link>}
         </nav>
       </header>
       <main className="flex-1">
