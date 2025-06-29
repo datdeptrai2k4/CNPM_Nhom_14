@@ -293,16 +293,15 @@ export default function AdminPage() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="recipes">Recipes</TabsTrigger>
             <TabsTrigger value="users">Users</TabsTrigger>
             <TabsTrigger value="categories">Categories</TabsTrigger>
-            <TabsTrigger value="reports">Reports</TabsTrigger>
           </TabsList>
 
           <TabsContent value="dashboard" className="mt-6">
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle className="text-sm font-medium">Total Recipes</CardTitle>
@@ -338,26 +337,6 @@ export default function AdminPage() {
                   <p className="text-xs text-gray-500">
                     +{users.filter((u) => new Date(u.created_at) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)).length} this week
                   </p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium">Categories</CardTitle>
-                  <BarChart className="h-4 w-4 text-gray-500" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{categories.length}</div>
-                  <p className="text-xs text-gray-500">Active categories</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium">Reported Content</CardTitle>
-                  <Flag className="h-4 w-4 text-gray-500" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{MOCK_REPORTED.length}</div>
-                  <p className="text-xs text-gray-500">{MOCK_REPORTED.length} need review</p>
                 </CardContent>
               </Card>
             </div>
@@ -397,10 +376,6 @@ export default function AdminPage() {
                         <TableCell className="font-medium">{recipe.title}</TableCell>
                         <TableCell>{recipe.author}</TableCell>
                         <TableCell>{categories.find((c) => c.id.toString() === recipe.categoryId)?.name || "Unknown"}</TableCell>
-                        <TableCell>
-                          <Badge variant={recipe.status === "published" ? "default" : "outline"}>{recipe.status}</Badge>
-                        </TableCell>
-                        <TableCell>{recipe.views}</TableCell>
                         <TableCell>{recipe.rating.toFixed(1)}</TableCell>
                         <TableCell>{new Date(recipe.createdAt).toLocaleDateString()}</TableCell>
                         <TableCell className="text-right">
@@ -537,7 +512,7 @@ export default function AdminPage() {
                         <TableCell>
                           <Badge variant={user.role === "admin" ? "secondary" : "outline"}>{user.role}</Badge>
                         </TableCell>
-                        <TableCell>{new Date(user.created_at).toLocaleDateString()}</TableCell>
+                        <TableCell>{new Date(user.createdAt).toLocaleDateString()}</TableCell>
                         <TableCell className="text-right">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -698,7 +673,7 @@ export default function AdminPage() {
                           <TableCell className="max-w-xs truncate">{category.description}</TableCell>
                           <TableCell>
                             <Badge variant="secondary">
-                              {MOCK_RECIPES.filter(r => r.categoryId === category.id.toString()).length}
+                              {recipes.filter(r => r.categoryId === category.id.toString()).length}
                             </Badge>
                           </TableCell>
                           <TableCell>{new Date(category.createdAt).toLocaleDateString()}</TableCell>
@@ -753,61 +728,6 @@ export default function AdminPage() {
                         </TableRow>
                       ))
                     )}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="reports" className="mt-6">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>Reported Content</CardTitle>
-                    <CardDescription>Review and moderate reported content</CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Content</TableHead>
-                      <TableHead>Author</TableHead>
-                      <TableHead>Reports</TableHead>
-                      <TableHead>Reason</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {MOCK_REPORTED.map((report) => (
-                      <TableRow key={report.id}>
-                        <TableCell>
-                          <Badge variant="outline">{report.type}</Badge>
-                        </TableCell>
-                        <TableCell className="font-medium">{report.title}</TableCell>
-                        <TableCell>{report.author}</TableCell>
-                        <TableCell>{report.reportCount}</TableCell>
-                        <TableCell>{report.reason}</TableCell>
-                        <TableCell>{report.date}</TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            <Button variant="outline" size="icon">
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            <Button variant="outline" size="icon" className="text-green-600">
-                              <Check className="h-4 w-4" />
-                            </Button>
-                            <Button variant="outline" size="icon" className="text-red-600">
-                              <X className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
                   </TableBody>
                 </Table>
               </CardContent>
