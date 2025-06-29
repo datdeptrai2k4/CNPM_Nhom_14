@@ -1,5 +1,6 @@
 "use client"
 
+import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/molecules/navigation/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/atoms/layout/card"
@@ -110,6 +111,8 @@ export default function AdminPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [users, setUsers] = useState([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
+  const [recipes, setRecipes] = useState([]);
+  const router = useRouter();
 
   useEffect(() => {
       fetch(`${API_BASE}/api/users/`)
@@ -131,6 +134,11 @@ export default function AdminPage() {
           setUsers(parsedUsers);
           setLoadingUsers(false);
         });
+    fetch(`${API_BASE}/api/recipes`)
+      .then((res) => res.json())
+      .then((data) => {
+        setRecipes(data);
+      });
     }, []);
 
   
@@ -152,6 +160,21 @@ export default function AdminPage() {
           : user
       )
     );
+  };
+
+  const handleDeleteRecipe = async (recipeId) => {
+    const confirmed = confirm("Are you sure you want to delete this recipe?");
+    if (!confirmed) return;
+
+    try {
+      await fetch(`${API_BASE}/api/recipes/${recipeId}`, {
+        method: "DELETE",
+      });
+
+      setRecipes((prev) => prev.filter((recipe) => recipe.id !== recipeId));
+    } catch (error) {
+      console.error("Failed to delete recipe:", error);
+    }
   };
 
   const handleToggleRole = async (userId, currentRole) => {
@@ -192,9 +215,9 @@ export default function AdminPage() {
                   <Utensils className="h-4 w-4 text-gray-500" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{MOCK_RECIPES.length}</div>
+                  <div className="text-2xl font-bold">{recipes.length}</div>
                   <p className="text-xs text-gray-500">
-                    +{MOCK_RECIPES.filter((r) => new Date(r.createdAt) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)).length} this week
+                    +{recipes.filter((r) => new Date(r.createdAt) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)).length} this week
                   </p>
                 </CardContent>
               </Card>
@@ -256,23 +279,17 @@ export default function AdminPage() {
                       <TableHead>Title</TableHead>
                       <TableHead>Author</TableHead>
                       <TableHead>Category</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Views</TableHead>
                       <TableHead>Rating</TableHead>
                       <TableHead>Date</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {MOCK_RECIPES.map((recipe) => (
+                    {recipes.map((recipe) => (
                       <TableRow key={recipe.id}>
                         <TableCell className="font-medium">{recipe.title}</TableCell>
                         <TableCell>{recipe.author}</TableCell>
                         <TableCell>{MOCK_CATEGORIES.find((c) => c.id === recipe.categoryId)?.name || "Unknown"}</TableCell>
-                        <TableCell>
-                          <Badge variant={recipe.status === "published" ? "default" : "outline"}>{recipe.status}</Badge>
-                        </TableCell>
-                        <TableCell>{recipe.views}</TableCell>
                         <TableCell>{recipe.rating.toFixed(1)}</TableCell>
                         <TableCell>{new Date(recipe.createdAt).toLocaleDateString()}</TableCell>
                         <TableCell className="text-right">
@@ -284,10 +301,8 @@ export default function AdminPage() {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                               <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                              <DropdownMenuItem>View Recipe</DropdownMenuItem>
-                              <DropdownMenuItem>Edit Recipe</DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => router.push(`/recipes/${recipe.id}`)}>View Recipe</DropdownMenuItem>
                               <DropdownMenuSeparator />
-                              <DropdownMenuItem>Unpublish</DropdownMenuItem>
                               <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                   <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-red-600">
@@ -303,7 +318,7 @@ export default function AdminPage() {
                                   </AlertDialogHeader>
                                   <AlertDialogFooter>
                                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction>Delete</AlertDialogAction>
+                                    <AlertDialogAction onClick={() => handleDeleteRecipe(recipe.id)}>Delete</AlertDialogAction>
                                   </AlertDialogFooter>
                                 </AlertDialogContent>
                               </AlertDialog>
