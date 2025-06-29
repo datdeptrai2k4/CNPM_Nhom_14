@@ -12,9 +12,17 @@ import { Label } from "@/components/atoms/form/label";
 import { Input } from "@/components/atoms/form/input";
 import { Textarea } from "@/components/atoms/form/textarea";
 import { Button } from "@/components/atoms/visuals/button";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/molecules/input-group/select";
 import { API_BASE } from "@/lib/config";
 import { Recipe } from "@/lib/type";
 import { updateRecipe } from "@/lib/api/recipe";
+import { categoryApi, Category } from "@/lib/api/category";
 
 export const RecipeForm = ({
   username,
@@ -41,6 +49,28 @@ export const RecipeForm = ({
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imageUrl, setImageUrl] = useState<string>("");
   const [imagePath, setImagePath] = useState<string>("");
+  
+  // Category state management
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loadingCategories, setLoadingCategories] = useState(true);
+
+  // Fetch categories on component mount
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        setLoadingCategories(true);
+        const fetchedCategories = await categoryApi.getAll();
+        setCategories(fetchedCategories);
+      } catch (error) {
+        console.error("Failed to fetch categories:", error);
+        // Keep loading state as true to show fallback
+      } finally {
+        setLoadingCategories(false);
+      }
+    };
+
+    fetchCategories();
+  }, []);
 
   // Populate form when editing
   useEffect(() => {
@@ -240,14 +270,44 @@ export const RecipeForm = ({
             </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="categoryId">Category ID</Label>
-            <Input
-              id="categoryId"
-              type="number"
-              value={categoryId}
-              onChange={(e) => setCategoryId(Number(e.target.value))}
-              required
-            />
+            <Label htmlFor="categoryId">Category</Label>
+            {loadingCategories ? (
+              <Input
+                id="categoryId"
+                type="number"
+                value={categoryId}
+                onChange={(e) => setCategoryId(Number(e.target.value))}
+                placeholder="Loading categories..."
+                required
+                disabled
+              />
+            ) : categories.length > 0 ? (
+              <Select
+                value={categoryId.toString()}
+                onValueChange={(value) => setCategoryId(Number(value))}
+                required
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map((category) => (
+                    <SelectItem key={category.id} value={category.id.toString()}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <Input
+                id="categoryId"
+                type="number"
+                value={categoryId}
+                onChange={(e) => setCategoryId(Number(e.target.value))}
+                placeholder="Enter category ID (categories failed to load)"
+                required
+              />
+            )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="image">Upload Image</Label>
