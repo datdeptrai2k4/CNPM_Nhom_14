@@ -11,6 +11,7 @@ import { Input } from "@/components/atoms/form/input";
 import { RecipeCard } from "@/components/organisms/content/recipe-card";
 import { FeaturedRecipes } from "@/components/organisms/content/featured-recipes";
 import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/nextjs";
+import { getFullImageUrl } from "@/lib/utils";
 
 interface Recipe {
   id: string;
@@ -155,7 +156,7 @@ export default function Home() {
                     description={recipe.description}
                     rating={recipe.rating ?? 0}
                     author={recipe.author}
-                    image={recipe.imageUrl ?? "/placeholder.jpg"}
+                    image={getFullImageUrl(recipe.imageUrl) ?? "/placeholder.jpg"}
                   />
                 ))
               )}
