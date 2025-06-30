@@ -16,6 +16,7 @@ import { API_BASE } from "@/lib/config";
 import { Recipe } from "@/lib/type";
 import { mockedRecipes } from "@/lib/mocks/recipes";
 import { useEffect, useState } from "react";
+import { getFullImageUrl } from "@/lib/utils";
 
 export function FeaturedRecipes() {
   const [featuredRecipes, setFeaturedRecipes] = useState<Recipe[]>();
@@ -80,7 +81,7 @@ export function FeaturedRecipes() {
             <Card className="overflow-hidden">
               <div className="relative h-[400px]">
                 <Image
-                  src={recipe.imageUrl || "/placeholder.svg"}
+                  src={getFullImageUrl(recipe.imageUrl) || "/placeholder.svg"}
                   alt={recipe.title}
                   fill
                   className="object-cover"
